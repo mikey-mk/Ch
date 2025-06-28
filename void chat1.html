@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoidChat - Video Social</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0f0f13;
+            --bg-darker: #08080c;
+            --bg-light: #1a1a24;
+            --accent-primary: #6d28d9;
+            --accent-secondary: #8b5cf6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #2d2d3a;
+            --online-indicator: #10b981;
+            --offline-indicator: #64748b;
+            --chat-bubble-user: #6d28d9;
+            --chat-bubble-other: #2d2d3a;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --rounded-sm: 4px;
+            --rounded-md: 8px;
+            --rounded-lg: 12px;
+            --rounded-full: 9999px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #app {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            height: 100vh;
+            opacity: 0; /* Hidden by default */
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        #app.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            background-color: var(--bg-darker);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: var(--rounded-sm);
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .logout-button:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-light);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--rounded-full);
+            object-fit: cover;
+            border: 2px solid var(--accent-primary);
+            position: relative;
+        }
+
+        .avatar-container {
+            position: relative;
+        }
+
+        .user-status {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 12px;
+            height: 12px;
+            border-radius: var(--rounded-full);
+            background-color: var(--online-indicator);
+            border: 2px solid var(--bg-darker);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-status-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .channels {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .channel {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-left: 3px solid transparent; /* For active indicator */
+        }
+
+        .channel:hover {
+            background-color: var(--bg-light);
+        }
+
+        .channel.active {
+            background-color: var(--bg-light);
+            border-left-color: var(--accent-primary);
+        }
+
+        .channel-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--rounded-full);
+            object-fit: cover;
+        }
+
+        .channel-info {
+            flex: 1;
+        }
+
+        .channel-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .channel-members {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Main content styles */
+        .main-content {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .video-container {
+            background-color: var(--bg-darker);
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .video-placeholder {
+            background-color: var(--bg-light);
+            border-radius: var(--rounded-md);
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .video-placeholder .user-avatar {
+            width: 80px;
+            height: 80px;
+            border: none;
+        }
+
+        .video-placeholder .user-name {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            font-size: 14px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 4px 8px;
+            border-radius: var(--rounded-sm);
+        }
+
+        .chat-container {
+            background-color: var(--bg-light);
+            border-top: 1px solid var(--border-color);
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative; /* For loading overlay */
+        }
+
+        .chat-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(26, 26, 36, 0.9); /* var(--bg-light) with opacity */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--text-secondary);
+            z-index: 10;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+        }
+
+        .chat-loading.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .message {
+            display: flex;
+            gap: 8px;
+            max-width: 80%;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--rounded-full);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .message-bubble {
+            padding: 8px 12px;
+            border-radius: var(--rounded-md);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message.sent .message-bubble {
+            background-color: var(--chat-bubble-user);
+            border-bottom-right-radius: var(--rounded-sm);
+        }
+
+        .message:not(.sent) .message-bubble {
+            background-color: var(--chat-bubble-other);
+            border-bottom-left-radius: var(--rounded-sm);
+        }
+
+        .message-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .message.sent .message-info {
+            justify-content: flex-end;
+        }
+
+        .message-sender {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .chat-input-container {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--rounded-md);
+            padding: 10px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .send-button {
+            background-color: var(--accent-primary);
+            color: var(--text-primary);
+            border: none;
+            border-radius: var(--rounded-md);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .send-button:hover {
+            background-color: var(--accent-secondary);
+        }
+
+        /* Login screen styles */
+        .login-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 1; /* Visible by default */
+            visibility: visible;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        .login-container.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none; /* Prevent interaction when hidden */
+        }
+
+        .login-box {
+            background-color: var(--bg-light);
+            border-radius: var(--rounded-lg);
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--accent-primary);
+        }
+
+        .avatar-upload {
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: var(--rounded-full);
+            object-fit: cover;
+            background-color: var(--bg-dark);
+            border: 3px solid var(--accent-primary);
+            margin-bottom: 12px;
+        }
+
+        .avatar-label {
+            background-color: var(--accent-primary);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: var(--rounded-md);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            display: inline-block;
+        }
+
+        .avatar-label:hover {
+            background-color: var(--accent-secondary);
+        }
+
+        .avatar-input {
+            display: none;
+        }
+
+        .username-input {
+            width: 100%;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--rounded-md);
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 24px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .username-input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .login-button {
+            width: 100%;
+            background-color: var(--accent-primary);
+            color: var(--text-primary);
+            border: none;
+            border-radius: var(--rounded-md);
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .login-button:hover {
+            background-color: var(--accent-secondary);
+        }
+
+        /* Scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-light);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-secondary);
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            #app {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none; /* Can be toggled with a button on mobile */
+            }
+
+            .video-container {
+                grid-template-columns: 1fr;
+            }
+
+            .video-placeholder {
+                max-width: 100%;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-comment-dots"></i>
+                    <span>VoidChat</span>
+                </div>
+                <button id="logout-button" class="logout-button">Logout</button>
+            </div>
+            <div class="user-profile">
+                <div class="avatar-container">
+                    <img id="sidebar-avatar" class="user-avatar" src="" alt="User Avatar">
+                    <div class="user-status"></div>
+                </div>
+                <div class="user-info">
+                    <div id="sidebar-username" class="user-name"></div>
+                    <div class="user-status-text">Online</div>
+                </div>
+            </div>
+            <div class="channels">
+                </div>
+        </div>
+
+        <div class="main-content">
+            <div class="video-container" id="video-grid">
+                </div>
+            <div class="chat-container">
+                <div class="chat-header">
+                    <span id="current-channel-name">General Chat</span>
+                    <span id="online-count">0 online</span>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div id="chat-loading" class="chat-loading">Loading messages...</div>
+                    </div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="message-input" placeholder="Type a message...">
+                    <button class="send-button" id="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="login-view" class="login-container">
+        <div class="login-box">
+            <h1 class="login-title">Join VoidChat</h1>
+            <div class="avatar-upload">
+                <img id="avatar-preview" class="avatar-preview" src="https://ui-avatars.com/api/?name=User&background=6d28d9&color=fff" alt="Avatar Preview">
+                <label for="avatar-input" class="avatar-label">Choose Profile Picture</label>
+                <input type="file" id="avatar-input" class="avatar-input" accept="image/*">
+            </div>
+            <input type="text" class="username-input" id="username-input" placeholder="Enter your display name" required>
+            <button class="login-button" id="login-button">Enter Chat</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDThDS9VrWRVmR62BzapeEFp2yZaN-w7t0", // REPLACE WITH YOUR ACTUAL API KEY
+            authDomain: "voidchat-8eaae.firebaseapp.com", // REPLACE WITH YOUR AUTH DOMAIN
+            projectId: "voidchat-8eaae", // REPLACE WITH YOUR PROJECT ID
+            storageBucket: "voidchat-8eaae.appspot.com", // REPLACE WITH YOUR STORAGE BUCKET
+            messagingSenderId: "57562845341", // REPLACE WITH YOUR SENDER ID
+            appId: "1:57562845341:web:a29c12b3zeef0af2ff4474" // REPLACE WITH YOUR APP ID
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // --- DOM Elements ---
+        const loginView = document.getElementById('login-view');
+        const appView = document.getElementById('app');
+        const usernameInput = document.getElementById('username-input');
+        const avatarInput = document.getElementById('avatar-input');
+        const avatarPreview = document.getElementById('avatar-preview');
+        const loginButton = document.getElementById('login-button');
+        const logoutButton = document.getElementById('logout-button');
+
+        const sidebarAvatar = document.getElementById('sidebar-avatar');
+        const sidebarUsername = document.getElementById('sidebar-username');
+        const channelsList = document.querySelector('.channels');
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const videoGrid = document.getElementById('video-grid');
+        const onlineCount = document.getElementById('online-count');
+        const currentChannelNameDisplay = document.getElementById('current-channel-name');
+        const chatLoadingIndicator = document.getElementById('chat-loading');
+
+        // --- Global State ---
+        let currentUser = null; // Stores Firebase Auth user object
+        let userData = {        // Stores custom user data (name, avatar)
+            uid: '',
+            name: '',
+            avatar: '',
+            isOnline: false
+        };
+        let currentChannelId = 'general'; // Default channel
+
+        const CHANNELS_DATA = [
+            { id: 'general', name: 'General Chat', avatar: 'https://ui-avatars.com/api/?name=General+Chat&background=6d28d9&color=fff' },
+            { id: 'gaming', name: 'Gaming', avatar: 'https://ui-avatars.com/api/?name=Gaming&background=6d28d9&color=fff' },
+            { id: 'music', name: 'Music', avatar: 'https://ui-avatars.com/api/?name=Music&background=6d28d9&color=fff' }
+        ];
+
+        let usersRef; // Reference to users in Firebase
+        let messagesRef; // Reference to messages in current channel in Firebase
+
+        // --- Helper Functions ---
+
+        function showView(viewElement) {
+            loginView.classList.remove('visible');
+            appView.classList.remove('visible');
+            loginView.classList.add('hidden');
+            appView.classList.add('hidden');
+
+            viewElement.classList.add('visible');
+            viewElement.classList.remove('hidden');
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function getChannelRef(channelId) {
+            return database.ref(`channels/${channelId}/messages`);
+        }
+
+        function getUsersRef() {
+            return database.ref('users');
+        }
+
+        function getAvatarUrl(name, defaultUrl) {
+            // In a real app, you would use Firebase Storage URLs here.
+            // For this demo, we're using a data URL or a UI Avatars API.
+            return defaultUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6d28d9&color=fff`;
+        }
+
+        // --- Firebase Data Handling ---
+
+        function setUserOnline(uid, name, avatar) {
+            userData = { uid, name, avatar, isOnline: true };
+            getUsersRef().child(uid).set({
+                name: name,
+                avatar: avatar,
+                isOnline: true,
+                lastActive: Date.now()
+            });
+
+            // Set up presence: remove user when they disconnect
+            getUsersRef().child(uid).onDisconnect().update({
+                isOnline: false,
+                lastActive: Date.now()
+            });
+        }
+
+        function loadParticipants() {
+            getUsersRef().on('value', (snapshot) => {
+                videoGrid.innerHTML = ''; // Clear existing participants
+                const users = snapshot.val();
+                let onlineUsersCount = 0;
+
+                if (users) {
+                    Object.entries(users).forEach(([uid, userInfo]) => {
+                        if (userInfo.isOnline) {
+                            onlineUsersCount++;
+                            addParticipantToVideoGrid(uid, userInfo);
+                        }
+                    });
+                }
+                onlineCount.textContent = `${onlineUsersCount} online`;
+            });
+        }
+
+        function addParticipantToVideoGrid(uid, userInfo) {
+            const videoPlaceholder = document.createElement('div');
+            videoPlaceholder.className = 'video-placeholder fade-in';
+
+            const avatar = document.createElement('img');
+            avatar.className = 'user-avatar';
+            avatar.src = getAvatarUrl(userInfo.name, userInfo.avatar);
+            avatar.alt = `${userInfo.name}'s video`;
+
+            const name = document.createElement('div');
+            name.className = 'user-name';
+            name.textContent = userInfo.name;
+
+            videoPlaceholder.appendChild(avatar);
+            videoPlaceholder.appendChild(name);
+            videoGrid.appendChild(videoPlaceholder);
+        }
+
+        function loadChannelMessages(channelId) {
+            // Show loading indicator
+            chatLoadingIndicator.classList.remove('hidden');
+            chatMessages.innerHTML = `<div id="chat-loading" class="chat-loading">Loading messages...</div>`; // Keep loading indicator in place
+            currentChannelNameDisplay.textContent = CHANNELS_DATA.find(c => c.id === channelId).name;
+
+            if (messagesRef) {
+                messagesRef.off(); // Detach previous listener
+            }
+
+            messagesRef = getChannelRef(channelId);
+
+            messagesRef.on('value', (snapshot) => {
+                chatMessages.innerHTML = ''; // Clear all messages
+                chatLoadingIndicator.classList.add('hidden'); // Hide loading indicator
+
+                const messages = snapshot.val();
+                if (messages) {
+                    const messagesArray = Object.values(messages);
+                    messagesArray.sort((a, b) => a.timestamp - b.timestamp);
+
+                    messagesArray.forEach(msg => {
+                        // In a real app, expired message cleanup would be server-side (Cloud Functions)
+                        // to ensure consistent and reliable removal.
+                        if (isMessageExpired(msg.timestamp)) {
+                            // Optionally, messagesRef.child(msg.key).remove() here, but better server-side.
+                            return;
+                        }
+                        displayMessage(msg);
+                    });
+                }
+                scrollToBottom();
+            });
+        }
+
+        function isMessageExpired(timestamp) {
+            const fourHoursAgo = Date.now() - (4 * 60 * 60 * 1000);
+            return timestamp < fourHoursAgo;
+        }
+
+        function displayMessage(msg) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${msg.senderId === userData.uid ? 'sent' : ''} fade-in`;
+
+            const avatarImg = document.createElement('img');
+            avatarImg.className = 'message-avatar';
+            avatarImg.src = getAvatarUrl(msg.senderName, msg.avatar);
+            avatarImg.alt = msg.senderName + "'s avatar";
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = msg.text;
+
+            const messageInfo = document.createElement('div');
+            messageInfo.className = 'message-info';
+
+            if (msg.senderId !== userData.uid) {
+                const senderName = document.createElement('span');
+                senderName.className = 'message-sender';
+                senderName.textContent = msg.senderName;
+                messageInfo.appendChild(senderName);
+            }
+
+            const time = document.createElement('span');
+            time.className = 'message-time';
+            time.textContent = formatTime(msg.timestamp);
+            messageInfo.appendChild(time);
+
+            messageContent.appendChild(bubble);
+            messageContent.appendChild(messageInfo);
+
+            messageElement.appendChild(avatarImg);
+            messageElement.appendChild(messageContent);
+
+            chatMessages.appendChild(messageElement);
+        }
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (text === '') return;
+
+            const timestamp = Date.now();
+            const message = {
+                text: text,
+                senderId: userData.uid,
+                senderName: userData.name,
+                avatar: userData.avatar,
+                timestamp: timestamp
+            };
+
+            messagesRef.push(message)
+                .then(() => {
+                    messageInput.value = '';
+                })
+                .catch((error) => {
+                    console.error('Error sending message:', error);
+                    alert('Failed to send message. Please try again.');
+                });
+        }
+
+        // --- Channel Management ---
+        function renderChannels() {
+            channelsList.innerHTML = ''; // Clear existing channels
+            CHANNELS_DATA.forEach(channel => {
+                const channelElement = document.createElement('div');
+                channelElement.className = `channel ${channel.id === currentChannelId ? 'active' : ''}`;
+                channelElement.dataset.channelId = channel.id;
+
+                channelElement.innerHTML = `
+                    <img class="channel-avatar" src="${channel.avatar}" alt="${channel.name}">
+                    <div class="channel-info">
+                        <div class="channel-name">${channel.name}</div>
+                        <div class="channel-members">Loading members...</div> </div>
+                `;
+                channelsList.appendChild(channelElement);
+            });
+        }
+
+        function switchChannel(channelId) {
+            if (currentChannelId === channelId) return;
+
+            // Update active class in sidebar
+            const oldActiveChannel = document.querySelector(`.channel.active`);
+            if (oldActiveChannel) oldActiveChannel.classList.remove('active');
+
+            const newActiveChannel = document.querySelector(`.channel[data-channel-id="${channelId}"]`);
+            if (newActiveChannel) newActiveChannel.classList.add('active');
+
+            currentChannelId = channelId;
+            loadChannelMessages(currentChannelId);
+        }
+
+        // --- Event Handlers ---
+
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    avatarPreview.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        loginButton.addEventListener('click', function() {
+            const username = usernameInput.value.trim();
+            const avatar = avatarPreview.src;
+
+            if (username === '') {
+                alert('Please enter a display name');
+                return;
+            }
+
+            // Use Firebase Anonymous Auth
+            auth.signInAnonymously()
+                .then((userCredential) => {
+                    currentUser = userCredential.user;
+                    userData.uid = currentUser.uid;
+                    userData.name = username;
+                    userData.avatar = avatar; // In a real app, upload to Firebase Storage and save URL
+
+                    localStorage.setItem('voidchat_user_uid', userData.uid);
+                    localStorage.setItem('voidchat_user_name', userData.name);
+                    localStorage.setItem('voidchat_user_avatar', userData.avatar);
+
+                    setupApp();
+                })
+                .catch((error) => {
+                    console.error('Anonymous sign-in error:', error);
+                    alert('Failed to log in. Please try again.');
+                });
+        });
+
+        logoutButton.addEventListener('click', function() {
+            auth.signOut().then(() => {
+                localStorage.removeItem('voidchat_user_uid');
+                localStorage.removeItem('voidchat_user_name');
+                localStorage.removeItem('voidchat_user_avatar');
+                currentUser = null;
+                userData = { uid: '', name: '', avatar: '', isOnline: false };
+                if (messagesRef) messagesRef.off();
+                if (getUsersRef()) getUsersRef().off(); // Detach user presence listener
+                showView(loginView);
+            }).catch((error) => {
+                console.error('Logout error:', error);
+                alert('Failed to log out.');
+            });
+        });
+
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        channelsList.addEventListener('click', function(e) {
+            const channelElement = e.target.closest('.channel');
+            if (channelElement) {
+                const channelId = channelElement.dataset.channelId;
+                switchChannel(channelId);
+            }
+        });
+
+        // --- Initialization ---
+
+        function setupApp() {
+            // Update sidebar with user info
+            sidebarAvatar.src = userData.avatar;
+            sidebarUsername.textContent = userData.name;
+
+            setUserOnline(userData.uid, userData.name, userData.avatar);
+            loadParticipants(); // Start listening for online users
+            renderChannels(); // Render channel list
+            switchChannel(currentChannelId); // Load messages for default channel
+
+            showView(appView); // Show the main app view
+            scrollToBottom();
+        }
+
+        // Check Firebase Auth state
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                // Try to retrieve cached user data from localStorage
+                userData.uid = currentUser.uid;
+                userData.name = localStorage.getItem('voidchat_user_name') || 'Guest';
+                userData.avatar = localStorage.getItem('voidchat_user_avatar') || getAvatarUrl(userData.name);
+
+                // If no name/avatar in localStorage (e.g., first login, or cleared data)
+                if (!localStorage.getItem('voidchat_user_name')) {
+                     // Redirect to login if essential data is missing (more robust for real auth)
+                     // For anonymous, we might still want them to set name/avatar.
+                     // For simplicity, we just proceed with placeholder if not found.
+                     // In a real app with proper auth, you'd ensure profile setup.
+                     showView(loginView);
+                } else {
+                    setupApp();
+                }
+
+            } else {
+                // No user is signed in.
+                showView(loginView);
+            }
+        });
+
+        // Initial periodic cleanup reminder (better with Cloud Functions)
+        setInterval(() => {
+            CHANNELS_DATA.forEach(channel => {
+                const channelMessagesRef = getChannelRef(channel.id);
+                channelMessagesRef.once('value', (snapshot) => {
+                    const messages = snapshot.val();
+                    if (messages) {
+                        Object.entries(messages).forEach(([key, msg]) => {
+                            if (isMessageExpired(msg.timestamp)) {
+                                channelMessagesRef.child(key).remove()
+                                    .catch(error => console.error(`Error deleting expired message ${key} from ${channel.id}:`, error));
+                            }
+                        });
+                    }
+                });
+            });
+        }, 60 * 60 * 1000); // Check every hour
+
+    </script>
+</body>
+</html>
