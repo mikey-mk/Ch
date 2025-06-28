@@ -47,14 +47,6 @@
             display: grid;
             grid-template-columns: 280px 1fr;
             height: 100vh;
-            opacity: 0; /* Hidden by default */
-            visibility: hidden;
-            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-        }
-
-        #app.visible {
-            opacity: 1;
-            visibility: visible;
         }
 
         /* Sidebar styles */
@@ -83,22 +75,6 @@
             gap: 8px;
         }
 
-        .logout-button {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 14px;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: var(--rounded-sm);
-            transition: color 0.2s, background-color 0.2s;
-        }
-
-        .logout-button:hover {
-            color: var(--text-primary);
-            background-color: var(--bg-light);
-        }
-
         .user-profile {
             display: flex;
             align-items: center;
@@ -113,10 +89,6 @@
             border-radius: var(--rounded-full);
             object-fit: cover;
             border: 2px solid var(--accent-primary);
-            position: relative;
-        }
-
-        .avatar-container {
             position: relative;
         }
 
@@ -158,7 +130,6 @@
             padding: 12px 16px;
             cursor: pointer;
             transition: background-color 0.2s;
-            border-left: 3px solid transparent; /* For active indicator */
         }
 
         .channel:hover {
@@ -167,7 +138,7 @@
 
         .channel.active {
             background-color: var(--bg-light);
-            border-left-color: var(--accent-primary);
+            border-left: 3px solid var(--accent-primary);
         }
 
         .channel-avatar {
@@ -260,28 +231,6 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            position: relative; /* For loading overlay */
-        }
-
-        .chat-loading {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(26, 26, 36, 0.9); /* var(--bg-light) with opacity */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: var(--text-secondary);
-            z-index: 10;
-            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
-        }
-
-        .chat-loading.hidden {
-            opacity: 0;
-            visibility: hidden;
         }
 
         .message {
@@ -396,15 +345,6 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
-            opacity: 1; /* Visible by default */
-            visibility: visible;
-            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-        }
-
-        .login-container.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none; /* Prevent interaction when hidden */
         }
 
         .login-box {
@@ -520,7 +460,7 @@
             }
 
             .sidebar {
-                display: none; /* Can be toggled with a button on mobile */
+                display: none;
             }
 
             .video-container {
@@ -545,13 +485,13 @@
 </head>
 <body>
     <div id="app">
+        <!-- Sidebar will be populated after login -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fas fa-comment-dots"></i>
                     <span>VoidChat</span>
                 </div>
-                <button id="logout-button" class="logout-button">Logout</button>
             </div>
             <div class="user-profile">
                 <div class="avatar-container">
@@ -564,20 +504,42 @@
                 </div>
             </div>
             <div class="channels">
+                <div class="channel active">
+                    <img class="channel-avatar" src="https://ui-avatars.com/api/?name=General+Chat&background=6d28d9&color=fff" alt="General Chat">
+                    <div class="channel-info">
+                        <div class="channel-name">General Chat</div>
+                        <div class="channel-members">12 online</div>
+                    </div>
                 </div>
+                <div class="channel">
+                    <img class="channel-avatar" src="https://ui-avatars.com/api/?name=Gaming&background=6d28d9&color=fff" alt="Gaming">
+                    <div class="channel-info">
+                        <div class="channel-name">Gaming</div>
+                        <div class="channel-members">8 online</div>
+                    </div>
+                </div>
+                <div class="channel">
+                    <img class="channel-avatar" src="https://ui-avatars.com/api/?name=Music&background=6d28d9&color=fff" alt="Music">
+                    <div class="channel-info">
+                        <div class="channel-name">Music</div>
+                        <div class="channel-members">5 online</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="main-content">
             <div class="video-container" id="video-grid">
-                </div>
+                <!-- Video placeholders will be added dynamically -->
+            </div>
             <div class="chat-container">
                 <div class="chat-header">
-                    <span id="current-channel-name">General Chat</span>
-                    <span id="online-count">0 online</span>
+                    <span>General Chat</span>
+                    <span id="online-count">12 online</span>
                 </div>
                 <div class="chat-messages" id="chat-messages">
-                    <div id="chat-loading" class="chat-loading">Loading messages...</div>
-                    </div>
+                    <!-- Messages will be added dynamically -->
+                </div>
                 <div class="chat-input-container">
                     <input type="text" class="chat-input" id="message-input" placeholder="Type a message...">
                     <button class="send-button" id="send-button">
@@ -602,289 +564,263 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
-        // --- Firebase Configuration ---
+        // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyDThDS9VrWRVmR62BzapeEFp2yZaN-w7t0", // REPLACE WITH YOUR ACTUAL API KEY
-            authDomain: "voidchat-8eaae.firebaseapp.com", // REPLACE WITH YOUR AUTH DOMAIN
-            projectId: "voidchat-8eaae", // REPLACE WITH YOUR PROJECT ID
-            storageBucket: "voidchat-8eaae.appspot.com", // REPLACE WITH YOUR STORAGE BUCKET
-            messagingSenderId: "57562845341", // REPLACE WITH YOUR SENDER ID
-            appId: "1:57562845341:web:a29c12b3zeef0af2ff4474" // REPLACE WITH YOUR APP ID
+            apiKey: "AIzaSyDThDS9VrWRVmR62BzapeEFp2yZaN-w7t0",
+            authDomain: "voidchat-8eaae.firebaseapp.com",
+            projectId: "voidchat-8eaae",
+            storageBucket: "voidchat-8eaae.appspot.com",
+            messagingSenderId: "57562845341",
+            appId: "1:57562845341:web:a29c12b3zeef0af2ff4474"
         };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const database = firebase.database();
+        const messagesRef = database.ref('messages');
+        const usersRef = database.ref('users');
 
-        // --- DOM Elements ---
+        // DOM elements
         const loginView = document.getElementById('login-view');
         const appView = document.getElementById('app');
         const usernameInput = document.getElementById('username-input');
         const avatarInput = document.getElementById('avatar-input');
         const avatarPreview = document.getElementById('avatar-preview');
         const loginButton = document.getElementById('login-button');
-        const logoutButton = document.getElementById('logout-button');
-
         const sidebarAvatar = document.getElementById('sidebar-avatar');
         const sidebarUsername = document.getElementById('sidebar-username');
-        const channelsList = document.querySelector('.channels');
         const chatMessages = document.getElementById('chat-messages');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
         const videoGrid = document.getElementById('video-grid');
         const onlineCount = document.getElementById('online-count');
-        const currentChannelNameDisplay = document.getElementById('current-channel-name');
-        const chatLoadingIndicator = document.getElementById('chat-loading');
 
-        // --- Global State ---
-        let currentUser = null; // Stores Firebase Auth user object
-        let userData = {        // Stores custom user data (name, avatar)
-            uid: '',
+        // User data
+        let user = {
+            id: '',
             name: '',
             avatar: '',
             isOnline: false
         };
-        let currentChannelId = 'general'; // Default channel
 
-        const CHANNELS_DATA = [
-            { id: 'general', name: 'General Chat', avatar: 'https://ui-avatars.com/api/?name=General+Chat&background=6d28d9&color=fff' },
-            { id: 'gaming', name: 'Gaming', avatar: 'https://ui-avatars.com/api/?name=Gaming&background=6d28d9&color=fff' },
-            { id: 'music', name: 'Music', avatar: 'https://ui-avatars.com/api/?name=Music&background=6d28d9&color=fff' }
-        ];
+        // Video participants data
+        let participants = {};
 
-        let usersRef; // Reference to users in Firebase
-        let messagesRef; // Reference to messages in current channel in Firebase
-
-        // --- Helper Functions ---
-
-        function showView(viewElement) {
-            loginView.classList.remove('visible');
-            appView.classList.remove('visible');
-            loginView.classList.add('hidden');
-            appView.classList.add('hidden');
-
-            viewElement.classList.add('visible');
-            viewElement.classList.remove('hidden');
+        // Check if user is already logged in
+        function checkLogin() {
+            const savedUser = localStorage.getItem('voidchat_user');
+            if (savedUser) {
+                user = JSON.parse(savedUser);
+                user.id = generateUserId();
+                showAppView();
+                setUserOnline();
+            }
         }
 
-        function scrollToBottom() {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+        // Generate a simple user ID
+        function generateUserId() {
+            return 'user-' + Math.random().toString(36).substr(2, 9);
         }
 
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // Show main application view
+        function showAppView() {
+            loginView.style.display = 'none';
+            appView.style.display = 'grid';
+            
+            // Update sidebar with user info
+            sidebarAvatar.src = user.avatar;
+            sidebarUsername.textContent = user.name;
+            
+            // Load messages and participants
+            loadMessages();
+            loadParticipants();
+            
+            // Add user to video grid
+            addParticipant(user);
+            
+            // Scroll to bottom of chat
+            setTimeout(() => {
+                scrollToBottom();
+            }, 100);
         }
 
-        function getChannelRef(channelId) {
-            return database.ref(`channels/${channelId}/messages`);
-        }
-
-        function getUsersRef() {
-            return database.ref('users');
-        }
-
-        function getAvatarUrl(name, defaultUrl) {
-            // In a real app, you would use Firebase Storage URLs here.
-            // For this demo, we're using a data URL or a UI Avatars API.
-            return defaultUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6d28d9&color=fff`;
-        }
-
-        // --- Firebase Data Handling ---
-
-        function setUserOnline(uid, name, avatar) {
-            userData = { uid, name, avatar, isOnline: true };
-            getUsersRef().child(uid).set({
-                name: name,
-                avatar: avatar,
+        // Set user as online in Firebase
+        function setUserOnline() {
+            user.isOnline = true;
+            usersRef.child(user.id).set({
+                name: user.name,
+                avatar: user.avatar,
                 isOnline: true,
                 lastActive: Date.now()
             });
-
-            // Set up presence: remove user when they disconnect
-            getUsersRef().child(uid).onDisconnect().update({
+            
+            // Update presence on disconnect
+            usersRef.child(user.id).onDisconnect().update({
                 isOnline: false,
                 lastActive: Date.now()
             });
         }
 
+        // Load participants from Firebase
         function loadParticipants() {
-            getUsersRef().on('value', (snapshot) => {
-                videoGrid.innerHTML = ''; // Clear existing participants
+            usersRef.on('value', (snapshot) => {
                 const users = snapshot.val();
-                let onlineUsersCount = 0;
-
+                videoGrid.innerHTML = '';
+                participants = {};
+                
                 if (users) {
-                    Object.entries(users).forEach(([uid, userInfo]) => {
-                        if (userInfo.isOnline) {
-                            onlineUsersCount++;
-                            addParticipantToVideoGrid(uid, userInfo);
+                    Object.entries(users).forEach(([id, userData]) => {
+                        if (userData.isOnline) {
+                            participants[id] = userData;
+                            addParticipantToVideoGrid(id, userData);
                         }
                     });
+                    
+                    // Update online count
+                    onlineCount.textContent = Object.keys(participants).length + ' online';
                 }
-                onlineCount.textContent = `${onlineUsersCount} online`;
             });
         }
 
-        function addParticipantToVideoGrid(uid, userInfo) {
+        // Add participant to video grid
+        function addParticipant(userData) {
+            if (participants[userData.id]) return;
+            
+            participants[userData.id] = userData;
+            addParticipantToVideoGrid(userData.id, userData);
+            onlineCount.textContent = Object.keys(participants).length + ' online';
+        }
+
+        // Add participant to video grid DOM
+        function addParticipantToVideoGrid(id, userData) {
             const videoPlaceholder = document.createElement('div');
             videoPlaceholder.className = 'video-placeholder fade-in';
-
+            
             const avatar = document.createElement('img');
             avatar.className = 'user-avatar';
-            avatar.src = getAvatarUrl(userInfo.name, userInfo.avatar);
-            avatar.alt = `${userInfo.name}'s video`;
-
+            avatar.src = userData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=6d28d9&color=fff`;
+            avatar.alt = `${userData.name}'s video`;
+            
             const name = document.createElement('div');
             name.className = 'user-name';
-            name.textContent = userInfo.name;
-
+            name.textContent = userData.name;
+            
             videoPlaceholder.appendChild(avatar);
             videoPlaceholder.appendChild(name);
             videoGrid.appendChild(videoPlaceholder);
         }
 
-        function loadChannelMessages(channelId) {
-            // Show loading indicator
-            chatLoadingIndicator.classList.remove('hidden');
-            chatMessages.innerHTML = `<div id="chat-loading" class="chat-loading">Loading messages...</div>`; // Keep loading indicator in place
-            currentChannelNameDisplay.textContent = CHANNELS_DATA.find(c => c.id === channelId).name;
-
-            if (messagesRef) {
-                messagesRef.off(); // Detach previous listener
-            }
-
-            messagesRef = getChannelRef(channelId);
-
+        // Load messages from Firebase
+        function loadMessages() {
             messagesRef.on('value', (snapshot) => {
-                chatMessages.innerHTML = ''; // Clear all messages
-                chatLoadingIndicator.classList.add('hidden'); // Hide loading indicator
-
+                chatMessages.innerHTML = '';
                 const messages = snapshot.val();
+                
                 if (messages) {
+                    // Convert to array and sort by timestamp
                     const messagesArray = Object.values(messages);
                     messagesArray.sort((a, b) => a.timestamp - b.timestamp);
-
+                    
+                    // Display messages
                     messagesArray.forEach(msg => {
-                        // In a real app, expired message cleanup would be server-side (Cloud Functions)
-                        // to ensure consistent and reliable removal.
                         if (isMessageExpired(msg.timestamp)) {
-                            // Optionally, messagesRef.child(msg.key).remove() here, but better server-side.
+                            // Message is older than 4 hours, don't display
                             return;
                         }
+                        
                         displayMessage(msg);
                     });
+                    
+                    scrollToBottom();
                 }
-                scrollToBottom();
             });
         }
 
+        // Check if message is older than 4 hours
         function isMessageExpired(timestamp) {
             const fourHoursAgo = Date.now() - (4 * 60 * 60 * 1000);
             return timestamp < fourHoursAgo;
         }
 
+        // Display a message in the chat
         function displayMessage(msg) {
             const messageElement = document.createElement('div');
-            messageElement.className = `message ${msg.senderId === userData.uid ? 'sent' : ''} fade-in`;
-
+            messageElement.className = `message ${msg.senderId === user.id ? 'sent' : ''} fade-in`;
+            
             const avatarImg = document.createElement('img');
             avatarImg.className = 'message-avatar';
-            avatarImg.src = getAvatarUrl(msg.senderName, msg.avatar);
+            avatarImg.src = msg.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.senderName)}&background=6d28d9&color=fff`;
             avatarImg.alt = msg.senderName + "'s avatar";
-
+            
             const messageContent = document.createElement('div');
             messageContent.className = 'message-content';
-
+            
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
             bubble.textContent = msg.text;
-
+            
             const messageInfo = document.createElement('div');
             messageInfo.className = 'message-info';
-
-            if (msg.senderId !== userData.uid) {
+            
+            if (msg.senderId !== user.id) {
                 const senderName = document.createElement('span');
                 senderName.className = 'message-sender';
                 senderName.textContent = msg.senderName;
                 messageInfo.appendChild(senderName);
             }
-
+            
             const time = document.createElement('span');
             time.className = 'message-time';
             time.textContent = formatTime(msg.timestamp);
             messageInfo.appendChild(time);
-
+            
             messageContent.appendChild(bubble);
             messageContent.appendChild(messageInfo);
-
+            
             messageElement.appendChild(avatarImg);
             messageElement.appendChild(messageContent);
-
+            
             chatMessages.appendChild(messageElement);
         }
 
+        // Format timestamp to readable time
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Send a new message
         function sendMessage() {
             const text = messageInput.value.trim();
             if (text === '') return;
-
+            
             const timestamp = Date.now();
             const message = {
                 text: text,
-                senderId: userData.uid,
-                senderName: userData.name,
-                avatar: userData.avatar,
+                senderId: user.id,
+                senderName: user.name,
+                avatar: user.avatar,
                 timestamp: timestamp
             };
-
+            
+            // Push to Firebase
             messagesRef.push(message)
                 .then(() => {
                     messageInput.value = '';
                 })
                 .catch((error) => {
                     console.error('Error sending message:', error);
-                    alert('Failed to send message. Please try again.');
                 });
         }
 
-        // --- Channel Management ---
-        function renderChannels() {
-            channelsList.innerHTML = ''; // Clear existing channels
-            CHANNELS_DATA.forEach(channel => {
-                const channelElement = document.createElement('div');
-                channelElement.className = `channel ${channel.id === currentChannelId ? 'active' : ''}`;
-                channelElement.dataset.channelId = channel.id;
-
-                channelElement.innerHTML = `
-                    <img class="channel-avatar" src="${channel.avatar}" alt="${channel.name}">
-                    <div class="channel-info">
-                        <div class="channel-name">${channel.name}</div>
-                        <div class="channel-members">Loading members...</div> </div>
-                `;
-                channelsList.appendChild(channelElement);
-            });
+        // Scroll to bottom of chat
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function switchChannel(channelId) {
-            if (currentChannelId === channelId) return;
-
-            // Update active class in sidebar
-            const oldActiveChannel = document.querySelector(`.channel.active`);
-            if (oldActiveChannel) oldActiveChannel.classList.remove('active');
-
-            const newActiveChannel = document.querySelector(`.channel[data-channel-id="${channelId}"]`);
-            if (newActiveChannel) newActiveChannel.classList.add('active');
-
-            currentChannelId = channelId;
-            loadChannelMessages(currentChannelId);
-        }
-
-        // --- Event Handlers ---
-
+        // Handle avatar upload
         avatarInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -896,52 +832,31 @@
             }
         });
 
+        // Handle login
         loginButton.addEventListener('click', function() {
             const username = usernameInput.value.trim();
             const avatar = avatarPreview.src;
-
+            
             if (username === '') {
                 alert('Please enter a display name');
                 return;
             }
-
-            // Use Firebase Anonymous Auth
-            auth.signInAnonymously()
-                .then((userCredential) => {
-                    currentUser = userCredential.user;
-                    userData.uid = currentUser.uid;
-                    userData.name = username;
-                    userData.avatar = avatar; // In a real app, upload to Firebase Storage and save URL
-
-                    localStorage.setItem('voidchat_user_uid', userData.uid);
-                    localStorage.setItem('voidchat_user_name', userData.name);
-                    localStorage.setItem('voidchat_user_avatar', userData.avatar);
-
-                    setupApp();
-                })
-                .catch((error) => {
-                    console.error('Anonymous sign-in error:', error);
-                    alert('Failed to log in. Please try again.');
-                });
+            
+            user = {
+                id: generateUserId(),
+                name: username,
+                avatar: avatar,
+                isOnline: true
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('voidchat_user', JSON.stringify(user));
+            
+            showAppView();
+            setUserOnline();
         });
 
-        logoutButton.addEventListener('click', function() {
-            auth.signOut().then(() => {
-                localStorage.removeItem('voidchat_user_uid');
-                localStorage.removeItem('voidchat_user_name');
-                localStorage.removeItem('voidchat_user_avatar');
-                currentUser = null;
-                userData = { uid: '', name: '', avatar: '', isOnline: false };
-                if (messagesRef) messagesRef.off();
-                if (getUsersRef()) getUsersRef().off(); // Detach user presence listener
-                showView(loginView);
-            }).catch((error) => {
-                console.error('Logout error:', error);
-                alert('Failed to log out.');
-            });
-        });
-
-
+        // Event listeners
         sendButton.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -949,74 +864,22 @@
             }
         });
 
-        channelsList.addEventListener('click', function(e) {
-            const channelElement = e.target.closest('.channel');
-            if (channelElement) {
-                const channelId = channelElement.dataset.channelId;
-                switchChannel(channelId);
-            }
-        });
-
-        // --- Initialization ---
-
-        function setupApp() {
-            // Update sidebar with user info
-            sidebarAvatar.src = userData.avatar;
-            sidebarUsername.textContent = userData.name;
-
-            setUserOnline(userData.uid, userData.name, userData.avatar);
-            loadParticipants(); // Start listening for online users
-            renderChannels(); // Render channel list
-            switchChannel(currentChannelId); // Load messages for default channel
-
-            showView(appView); // Show the main app view
-            scrollToBottom();
-        }
-
-        // Check Firebase Auth state
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                // Try to retrieve cached user data from localStorage
-                userData.uid = currentUser.uid;
-                userData.name = localStorage.getItem('voidchat_user_name') || 'Guest';
-                userData.avatar = localStorage.getItem('voidchat_user_avatar') || getAvatarUrl(userData.name);
-
-                // If no name/avatar in localStorage (e.g., first login, or cleared data)
-                if (!localStorage.getItem('voidchat_user_name')) {
-                     // Redirect to login if essential data is missing (more robust for real auth)
-                     // For anonymous, we might still want them to set name/avatar.
-                     // For simplicity, we just proceed with placeholder if not found.
-                     // In a real app with proper auth, you'd ensure profile setup.
-                     showView(loginView);
-                } else {
-                    setupApp();
-                }
-
-            } else {
-                // No user is signed in.
-                showView(loginView);
-            }
-        });
-
-        // Initial periodic cleanup reminder (better with Cloud Functions)
+        // Clean up expired messages periodically
         setInterval(() => {
-            CHANNELS_DATA.forEach(channel => {
-                const channelMessagesRef = getChannelRef(channel.id);
-                channelMessagesRef.once('value', (snapshot) => {
-                    const messages = snapshot.val();
-                    if (messages) {
-                        Object.entries(messages).forEach(([key, msg]) => {
-                            if (isMessageExpired(msg.timestamp)) {
-                                channelMessagesRef.child(key).remove()
-                                    .catch(error => console.error(`Error deleting expired message ${key} from ${channel.id}:`, error));
-                            }
-                        });
-                    }
-                });
+            messagesRef.once('value', (snapshot) => {
+                const messages = snapshot.val();
+                if (messages) {
+                    Object.entries(messages).forEach(([key, msg]) => {
+                        if (isMessageExpired(msg.timestamp)) {
+                            messagesRef.child(key).remove();
+                        }
+                    });
+                }
             });
         }, 60 * 60 * 1000); // Check every hour
 
+        // Initialize the app
+        checkLogin();
     </script>
 </body>
 </html>
