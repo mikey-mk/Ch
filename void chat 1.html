@@ -1,0 +1,142 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GlassChat</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background: #0b0b0d; color: white; display: flex; align-items: center; justify-content: center; min-height: 100vh; }.glass-container {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  width: 95%;
+  max-width: 480px;
+}
+
+input, button {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.9rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+}
+button { background: #7a14c9; cursor: pointer; transition: 0.3s; }
+button:hover { background: #8707ea; }
+
+.hidden { display: none; }
+.chat-box { max-height: 300px; overflow-y: auto; margin-top: 1rem; border-radius: 10px; padding: 1rem; background: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 0.5rem; }
+.message { background: #2b0c47; padding: 0.6rem 1rem; border-radius: 10px; max-width: 80%; word-wrap: break-word; }
+.message.you { align-self: flex-end; background: #8707ea; }
+
+  </style>
+</head>
+<body>
+  <div class="glass-container" id="login-container">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Enter</button>
+  </div>  <div class="glass-container hidden" id="chat-container">
+    <h2>Chat Room</h2>
+    <div class="chat-box" id="chat-box"></div>
+    <input type="text" id="chat-message" placeholder="Type message...">
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="logout()">Logout</button>
+  </div>  <div class="glass-container hidden" id="admin-container">
+    <h3>Admin Panel</h3>
+    <p><strong>Total Users:</strong> <span id="total-users">0</span></p>
+    <p><strong>Total Messages:</strong> <span id="total-msg">0</span></p>
+    <h4>User Credentials:</h4>
+    <ul id="user-list" style="text-align: left; font-size: 0.9rem;"></ul>
+    <button onclick="showChat()">Switch to Chat</button>
+    <button onclick="logout()">Logout</button>
+  </div>  <!-- Firebase SDKs (UMD format for mobile support) -->  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DB_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let currentUser = "";
+    const ADMIN_USER = "IT'S_ME10M";
+    const ADMIN_PASS = "315800";
+
+    function login() {
+      const uname = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+      if (!uname || !pass) return alert("Please fill all fields");
+
+      currentUser = uname;
+      db.ref("users/" + uname).set({ password: pass });
+
+      if (uname === ADMIN_USER && pass === ADMIN_PASS) {
+        document.getElementById("login-container").classList.add("hidden");
+        document.getElementById("admin-container").classList.remove("hidden");
+        loadAdmin();
+      } else {
+        document.getElementById("login-container").classList.add("hidden");
+        document.getElementById("chat-container").classList.remove("hidden");
+        loadMessages();
+      }
+    }
+
+    function sendMessage() {
+      const msg = document.getElementById("chat-message").value;
+      if (!msg) return;
+      db.ref("messages").push({ user: currentUser, text: msg });
+      document.getElementById("chat-message").value = "";
+    }
+
+    function loadMessages() {
+      db.ref("messages").on("value", snap => {
+        const box = document.getElementById("chat-box");
+        box.innerHTML = "";
+        let count = 0;
+        snap.forEach(child => {
+          count++;
+          const msg = child.val();
+          const div = document.createElement("div");
+          div.className = "message" + (msg.user === currentUser ? " you" : "");
+          div.textContent = `${msg.user}: ${msg.text}`;
+          box.appendChild(div);
+        });
+        document.getElementById("total-msg").textContent = count;
+      });
+    }
+
+    function loadAdmin() {
+      db.ref("users").once("value").then(snap => {
+        const list = document.getElementById("user-list");
+        list.innerHTML = "";
+        let count = 0;
+        snap.forEach(child => {
+          count++;
+          const li = document.createElement("li");
+          li.textContent = `${child.key} / ${child.val().password}`;
+          list.appendChild(li);
+        });
+        document.getElementById("total-users").textContent = count;
+      });
+    }
+
+    function showChat() {
+      document.getElementById("admin-container").classList.add("hidden");
+      document.getElementById("chat-container").classList.remove("hidden");
+      loadMessages();
+    }
+
+    function logout() { location.reload(); }
+  </script></body>
+</html>
