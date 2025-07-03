@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- [Previous head content remains exactly the same] -->
+</head>
+<body>
+    <!-- [Previous HTML structure remains exactly the same until the script section] -->
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDThDS9VrWRVmR62BzapeEFp2yZaN-w7t0",
+            authDomain: "voidchat-8eaae.firebaseapp.com",
+            projectId: "voidchat-8eaae",
+            storageBucket: "voidchat-8eaae.appspot.com",
+            messagingSenderId: "57562845341",
+            appId: "1:57562845341:web:a29c12b3zeef0af2ff4474"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // DOM Elements
+        const chatWindow = document.getElementById('chatWindow');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const adminBtn = document.getElementById('adminBtn');
+        const loginModal = document.getElementById('loginModal');
+        const adminUsername = document.getElementById('adminUsername');
+        const adminPassword = document.getElementById('adminPassword');
+        const confirmLogin = document.getElementById('confirmLogin');
+        const cancelLogin = document.getElementById('cancelLogin');
+        const dashboard = document.getElementById('dashboard');
+        const chatContainer = document.getElementById('chatContainer');
+        const backToChat = document.getElementById('backToChat');
+        const usersList = document.getElementById('usersList');
+        const totalUsers = document.getElementById('totalUsers');
+        const totalMessages = document.getElementById('totalMessages');
+        const activeUsers = document.getElementById('activeUsers');
+        const installContainer = document.getElementById('installContainer');
+        const installBtn = document.getElementById('installBtn');
+
+        // User data
+        let currentUser = {
+            id: generateId(),
+            name: `User_${Math.floor(Math.random() * 10000)}`,
+            isAdmin: false
+        };
+
+        // Generate random ID
+        function generateId() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Format time
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Send message
+        function sendMessage() {
+            const messageText = messageInput.value.trim();
+            if (messageText === '') return;
+
+            const timestamp = Date.now();
+            const message = {
+                text: messageText,
+                sender: currentUser.name,
+                senderId: currentUser.id,
+                timestamp: timestamp,
+                isAdmin: currentUser.isAdmin
+            };
+
+            database.ref('messages').push(message);
+            messageInput.value = '';
+        }
+
+        // Display message
+        function displayMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            
+            if (message.senderId === currentUser.id) {
+                messageElement.classList.add('user-message');
+            } else if (message.isAdmin) {
+                messageElement.classList.add('admin-message');
+            }
+
+            messageElement.innerHTML = `
+                <div class="message-sender">${message.sender}</div>
+                <div class="message-text">${message.text}</div>
+                <div class="message-time">${formatTime(message.timestamp)}</div>
+            `;
+
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Load messages
+        database.ref('messages').on('child_added', (snapshot) => {
+            const message = snapshot.val();
+            displayMessage(message);
+        });
+
+        // Event listeners
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Admin login
+        adminBtn.addEventListener('click', () => {
+            if (currentUser.isAdmin) {
+                loadDashboard();
+                chatContainer.style.display = 'none';
+                dashboard.classList.add('active');
+            } else {
+                loginModal.classList.add('active');
+            }
+        });
+
+        confirmLogin.addEventListener('click', () => {
+            const username = adminUsername.value.trim();
+            const password = adminPassword.value.trim();
+
+            if (username === 'mahatabk4321@gmail.com' && password === '315800') {
+                currentUser.isAdmin = true;
+                currentUser.name = 'Admin';
+                loginModal.classList.remove('active');
+                showToast('Logged in as Admin');
+                
+                // Save admin status to Firebase
+                database.ref(`users/${currentUser.id}`).update({
+                    username: 'Admin',
+                    isAdmin: true
+                });
+                
+                // Load dashboard immediately after login
+                loadDashboard();
+                chatContainer.style.display = 'none';
+                dashboard.classList.add('active');
+            } else {
+                showToast('Invalid credentials');
+            }
+        });
+
+        cancelLogin.addEventListener('click', () => {
+            loginModal.classList.remove('active');
+        });
+
+        // Show dashboard
+        backToChat.addEventListener('click', () => {
+            chatContainer.style.display = 'flex';
+            dashboard.classList.remove('active');
+        });
+
+        // Load dashboard data
+        function loadDashboard() {
+            // Load users
+            database.ref('users').once('value').then((snapshot) => {
+                usersList.innerHTML = '';
+                let userCount = 0;
+                
+                snapshot.forEach((childSnapshot) => {
+                    const user = childSnapshot.val();
+                    if (user.username && user.password) { // Only show users with credentials
+                        const userItem = document.createElement('div');
+                        userItem.classList.add('user-item');
+                        userItem.innerHTML = `
+                            <div class="user-info">
+                                <div class="user-name">${user.username}</div>
+                                <div class="user-pass">${user.password || 'N/A'}</div>
+                            </div>
+                        `;
+                        usersList.appendChild(userItem);
+                        userCount++;
+                    }
+                });
+
+                totalUsers.textContent = userCount;
+            }).catch(error => {
+                console.error("Error loading users:", error);
+                showToast("Error loading users");
+            });
+
+            // Load message count
+            database.ref('messages').once('value').then((snapshot) => {
+                totalMessages.textContent = snapshot.numChildren();
+            }).catch(error => {
+                console.error("Error loading messages:", error);
+                showToast("Error loading messages");
+            });
+
+            // Load active users (simplified - in a real app you'd track active connections)
+            database.ref('users').once('value').then((snapshot) => {
+                activeUsers.textContent = snapshot.numChildren();
+            });
+        }
+
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.backgroundColor = 'var(--card)';
+            toast.style.color = 'var(--text)';
+            toast.style.padding = '12px 24px';
+            toast.style.borderRadius = '25px';
+            toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+            toast.style.zIndex = '1000';
+            toast.style.animation = 'fadeIn 0.3s ease';
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // PWA Installation
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installContainer.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installContainer.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful');
+                }).catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+
+        // Register user
+        database.ref(`users/${currentUser.id}`).set({
+            username: currentUser.name,
+            password: 'guest',
+            isAdmin: false,
+            lastActive: Date.now()
+        });
+
+        // Update user activity periodically
+        setInterval(() => {
+            if (currentUser.id) {
+                database.ref(`users/${currentUser.id}`).update({
+                    lastActive: Date.now()
+                });
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
